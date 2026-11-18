@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulateur d'Abaissement Fréquentiel — Audiologie & DSP</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --border: #dce2ec;
+      --text: #1e293b;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --accent: #e11d48;
+      --success: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1360px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #eff6ff;
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+    }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .file-zone {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: #f1f5f9;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    button.accent {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    button.accent:hover:not(:disabled) {
+      background: #be123c;
+    }
+
+    button.success {
+      background: var(--success);
+      color: #fff;
+      border-color: var(--success);
+    }
+
+    button.success:hover:not(:disabled) {
+      background: #047857;
+    }
+
+    button.preset-btn {
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      background: #f8fafc;
+    }
+
+    .param-group {
+      margin-bottom: 14px;
+    }
+
+    .param-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .param-header span.val {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      color: var(--primary);
+      background: #eff6ff;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.82rem;
+    }
+
+    .param-sub {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      margin-top: 4px;
+      color: var(--text);
+    }
+
+    .formula-box {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.82rem;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+      line-height: 1.55;
+    }
+
+    .formula-box strong {
+      color: #38bdf8;
+    }
+
+    .plots-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 1280px) {
+      .plots-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    canvas {
+      width: 100%;
+      height: 330px;
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 0.8rem;
+      margin-top: 10px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .audio-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+
+    .status-text {
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    .tooltip {
+      font-size: 0.8rem;
+      font-family: monospace;
+      color: var(--text);
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
+
+    .dsp-note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: #f8fafc;
+      border-left: 3px solid var(--primary);
+      padding: 10px 12px;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>Simulateur d'Abaissement Fréquentiel (Compression &amp; Transposition)</h1>
+      <p>Vocodeur de phase STFT — Loi puissance normalisée (f<sub>e</sub> / f<sub>c</sub>)<sup>1/CR</sup> linéaire en échelle log-log</p>
+    </div>
+    <div>
+      <span class="badge" id="modeBadge">Mode : Compression non-linéaire</span>
+    </div>
+  </header>
+
+  <div class="grid-main">
+    <!-- COLONNE GAUCHE : SOURCE & PARAMÈTRES -->
+    <div>
+      <div class="card">
+        <h2>1. Signal d'entrée (.WAV)</h2>
+        <div class="file-zone">
+          <input type="file" id="wavInput" accept=".wav,audio/*" />
+          <div class="btn-row">
+            <button id="btnSynth" title="Génère une voyelle /a/ suivie de fricatives /ch/, /f/, /s/">
+              Générer signal test (/a/ + /ch/ /f/ /s/)
+            </button>
+          </div>
+          <div class="status-text" id="fileInfo">Aucun fichier chargé — cliquez sur « Générer signal test » ou importez un .WAV.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2. Paramètres d'abaissement</h2>
+
+        <div class="param-group">
+          <div class="param-sub">Préréglages pédagogiques rapides :</div>
+          <div class="btn-row">
+            <button class="preset-btn" data-preset="comp_nl">Compression non-lin.</button>
+            <button class="preset-btn" data-preset="trans_lin">Transposition soustractive</button>
+            <button class="preset-btn" data-preset="trans_mult">Transposition compressée</button>
+            <button class="preset-btn" data-preset="trans_nl">Transp. comp. non-lin.</button>
+          </div>
+        </div>
+
+        <!-- Fréquence de coupure fc -->
+        <div class="param-group">
+          <div class="param-header">
+            <label for="fcSlider">Fréquence de coupure (f<sub>c</sub>)</label>
+            <span class="val" id="fcVal">2000 Hz</span>
+          </div>
+          <div class="param-sub">Fréquence au-dessus de laquelle le signal est abaissé</div>
+          <input type="range" id="fcSlider" min="500" max="6000" step="50" value="2000" />
+        </div>
+
+        <!-- Fréquence de départ fd -->
+        <div class="param-group">
+          <div class="param-header">
+            <label for="fdSlider">Fréquence de départ (f<sub>d</sub>)</label>
+            <span class="val" id="fdVal">2000 Hz</span>
+          </div>
+          <input type="range" id="fdSlider" min="250" max="6000" step="50" value="2000" disabled />
+          <label class="checkbox-row">
+            <input type="checkbox" id="lockFd" checked />
+            Verrouiller f<sub>d</sub> = f<sub>c</sub> (Compression sans saut initial)
+          </label>
+        </div>
+
+        <!-- Facteur soustratif delta_f -->
+        <div class="param-group">
+          <div class="param-header">
+            <label for="deltaSlider">Facteur soustratif (&Delta;f : f &rarr; f &minus; &Delta;f)</label>
+            <span class="val" id="deltaVal">0 Hz</span>
+          </div>
+          <div class="param-sub">Décalage arithmétique constant vers les graves</div>
+          <input type="range" id="deltaSlider" min="0" max="4000" step="50" value="0" />
+        </div>
+
+        <!-- Facteur multiplicatif d -->
+        <div class="param-group">
+          <div class="param-header">
+            <label for="multSlider">Facteur multiplicatif (d : f &rarr; f &times; d)</label>
+            <span class="val" id="multVal">1.00</span>
+          </div>
+          <div class="param-sub">Mise à l'échelle linéaire de la bande (d &le; 1)</div>
+          <input type="range" id="multSlider" min="0.20" max="1.00" step="0.02" value="1.00" />
+        </div>
+
+        <!-- Facteur gamma CR -->
+        <div class="param-group">
+          <div class="param-header">
+            <label for="crSlider">Facteur gamma (CR : pente 1/CR en log)</label>
+            <span class="val" id="crVal">2.00</span>
+          </div>
+          <div class="param-sub">Taux de compression non-linéaire (CR = 1 &rArr; linéaire)</div>
+          <input type="range" id="crSlider" min="1.00" max="4.00" step="0.05" value="2.00" />
+        </div>
+
+        <!-- Gain HF abaissée -->
+        <div class="param-group">
+          <div class="param-header">
+            <label for="gainSlider">Gain de la bande abaissée</label>
+            <span class="val" id="gainVal">+0 dB</span>
+          </div>
+          <input type="range" id="gainSlider" min="-12" max="18" step="1" value="0" />
+        </div>
+
+        <div class="formula-box" id="formulaDisplay"></div>
+      </div>
+    </div>
+
+    <!-- COLONNE DROITE : LECTURE, EXPORT & GRAPHIQUES -->
+    <div>
+      <div class="audio-bar">
+        <div class="btn-row">
+          <button class="primary" id="btnPlayIn" disabled>&#9654; Écouter Entrée</button>
+          <button class="accent" id="btnPlayOut" disabled>&#9654; Écouter Sortie</button>
+          <button id="btnStop" disabled>&#9632; Stop</button>
+          <label class="checkbox-row" style="margin-left: 6px;">
+            <input type="checkbox" id="loopCheck" checked />
+            Boucle (comparaison A/B instantanée)
+          </label>
+        </div>
+        <div>
+          <button class="success" id="btnExport" disabled>&#11015; Exporter Sortie (.WAV)</button>
+        </div>
+      </div>
+
+      <div class="plots-grid">
+        <!-- Courbe fs(fe) -->
+        <div class="card">
+          <h2>
+            <span>3. Fonction de transfert f<sub>s</sub>(f<sub>e</sub>)</span>
+            <button id="toggleCurveScale" style="font-size: 0.76rem; padding: 4px 10px;">Échelle : Log</button>
+          </h2>
+          <canvas id="curveCanvas" width="600" height="400"></canvas>
+          <div class="tooltip" id="curveTooltip">Survolez la courbe pour lire (f<sub>e</sub>, f<sub>s</sub>)</div>
+          <div class="legend">
+            <div class="legend-item"><span class="swatch" style="background:#94a3b8; border-bottom: 1px dashed #64748b;"></span> Identité (f<sub>s</sub> = f<sub>e</sub>)</div>
+            <div class="legend-item"><span class="swatch" style="background:#2563eb;"></span> Courbe f<sub>s</sub>(f<sub>e</sub>)</div>
+            <div class="legend-item"><span class="swatch" style="background:#f59e0b;"></span> Coupure f<sub>c</sub></div>
+            <div class="legend-item"><span class="swatch" style="background:rgba(225,29,72,0.25); height:10px;"></span> Zone d'overlap (&lt; f<sub>c</sub>)</div>
+          </div>
+        </div>
+
+        <!-- Spectre comparatif -->
+        <div class="card">
+          <h2>
+            <span>4. Spectre moyen (LTAS) Entrée vs Sortie</span>
+            <button id="toggleSpecScale" style="font-size: 0.76rem; padding: 4px 10px;">Échelle : Log</button>
+          </h2>
+          <canvas id="specCanvas" width="600" height="400"></canvas>
+          <div class="tooltip" id="specTooltip">Survolez le spectre pour lire la fréquence et le niveau (dB)</div>
+          <div class="legend">
+            <div class="legend-item"><span class="swatch" style="background:#2563eb;"></span> Spectre d'entrée</div>
+            <div class="legend-item"><span class="swatch" style="background:#e11d48;"></span> Spectre de sortie abaissé</div>
+            <div class="legend-item"><span class="swatch" style="background:#f59e0b;"></span> Coupure f<sub>c</sub></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Architecture DSP implémentée</h2>
+        <div class="dsp-note">
+          <strong>Vocodeur de phase STFT (N = 2048, recouvrement 75 %, fenêtre de Hann) :</strong>
+          Sous <em>f<sub>c</sub></em>, le spectre complexe est conservé intact. Pour <em>f<sub>e</sub> &ge; f<sub>c</sub></em>, la fréquence cible suit <em>f<sub>s</sub> = (d &middot; f<sub>d</sub>) &middot; (f<sub>e</sub> / f<sub>c</sub>)<sup>1/CR</sup> &minus; &Delta;f</em>, garantissant <em>f<sub>s</sub> &le; f<sub>e</sub></em> et une droite de pente <em>1/CR</em> en coordonnées logarithmiques (pour <em>&Delta;f = 0</em>). La synthèse utilise une interpolation linéaire entre bins adjacents avec suivi de phase verrouillé sur le pic dominant, et additionne les composantes abaissées au signal grave d'origine lorsqu'elles passent sous <em>f<sub>c</sub></em>.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // =========================================================================
+  // 1. OUTILS FFT RADIX-2 (PUR JAVASCRIPT)
+  // =========================================================================
+  class FFT {
+    constructor(size) {
+      this.size = size;
+      this.rev = new Uint32Array(size);
+      this.cosTable = new Float64Array(size / 2);
+      this.sinTable = new Float64Array(size / 2);
+
+      const bits = Math.log2(size);
+      for (let i = 0; i < size; i++) {
+        let r = 0;
+        for (let j = 0; j < bits; j++) {
+          if ((i >> j) & 1) r |= 1 << (bits - 1 - j);
+        }
+        this.rev[i] = r;
+      }
+
+      for (let i = 0; i < size / 2; i++) {
+        const angle = (-2 * Math.PI * i) / size;
+        this.cosTable[i] = Math.cos(angle);
+        this.sinTable[i] = Math.sin(angle);
+      }
+    }
+
+    forward(re, im) {
+      const n = this.size;
+      const rev = this.rev;
+      for (let i = 0; i < n; i++) {
+        const j = rev[i];
+        if (i < j) {
+          let tmp = re[i]; re[i] = re[j]; re[j] = tmp;
+          tmp = im[i]; im[i] = im[j]; im[j] = tmp;
+        }
+      }
+
+      for (let len = 2; len <= n; len <<= 1) {
+        const half = len >> 1;
+        const step = n / len;
+        for (let i = 0; i < n; i += len) {
+          for (let j = 0, k = 0; j < half; j++, k += step) {
+            const c = this.cosTable[k];
+            const s = this.sinTable[k];
+            const idx1 = i + j;
+            const idx2 = idx1 + half;
+            const tRe = re[idx2] * c - im[idx2] * s;
+            const tIm = re[idx2] * s + im[idx2] * c;
+            re[idx2] = re[idx1] - tRe;
+            im[idx2] = im[idx1] - tIm;
+            re[idx1] += tRe;
+            im[idx1] += tIm;
+          }
+        }
+      }
+    }
+
+    inverse(re, im) {
+      const n = this.size;
+      for (let i = 0; i < n; i++) im[i] = -im[i];
+      this.forward(re, im);
+      const invN = 1 / n;
+      for (let i = 0; i < n; i++) {
+        re[i] *= invN;
+        im[i] = -im[i] * invN;
+      }
+    }
+  }
+
+  // =========================================================================
+  // 2. ÉTAT GLOBAL & PARAMÈTRES
+  // =========================================================================
+  const state = {
+    sampleRate: 44100,
+    inputBuffer: null,
+    outputBuffer: null,
+    inSpectrum: null,
+    outSpectrum: null,
+    fc: 2000,
+    fd: 2000,
+    lockFd: true,
+    deltaF: 0,
+    multD: 1.0,
+    cr: 2.0,
+    gainDb: 0,
+    curveLogScale: true, // Échelle log par défaut pour voir la droite de pente 1/CR
+    specLogScale: true,
+    audioCtx: null,
+    activeSource: null,
+    playingType: null,
+    playStartTime: 0,
+    playOffset: 0
+  };
+
+  const FFT_SIZE = 2048;
+  const HOP_SIZE = 512; // Recouvrement 75 %
+  const fft = new FFT(FFT_SIZE);
+
+  const hannWin = new Float64Array(FFT_SIZE);
+  for (let i = 0; i < FFT_SIZE; i++) {
+    hannWin[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / FFT_SIZE));
+  }
+
+  // =========================================================================
+  // 3. LOI DE TRANSFORMATION FRÉQUENTIELLE fs(fe) CORRIGÉE
+  //    fs = (d * fd) * (fe / fc)^(1 / CR) - deltaF  pour fe >= fc
+  // =========================================================================
+  function mapFrequency(fe) {
+    const { fc, fd, lockFd, deltaF, multD, cr } = state;
+    if (fe < fc) return fe;
+
+    const effectiveFd = lockFd ? fc : fd;
+    const gamma = 1 / Math.max(1, cr);
+    const ratio = Math.max(1, fe / fc);
+
+    const fs = multD * effectiveFd * Math.pow(ratio, gamma) - deltaF;
+    return Math.max(0, Math.min(state.sampleRate / 2, fs));
+  }
+
+  // =========================================================================
+  // 4. TRAITEMENT DSP PAR VOCODEUR DE PHASE STFT
+  // =========================================================================
+  function processSignal() {
+    if (!state.inputBuffer) return;
+
+    const input = state.inputBuffer;
+    const sr = state.sampleRate;
+    const nSamples = input.length;
+    const output = new Float64Array(nSamples + FFT_SIZE);
+
+    const numBins = FFT_SIZE / 2 + 1;
+    const kc = Math.round((state.fc * FFT_SIZE) / sr);
+    const hfGain = Math.pow(10, state.gainDb / 20);
+
+    const re = new Float64Array(FFT_SIZE);
+    const im = new Float64Array(FFT_SIZE);
+    const outRe = new Float64Array(FFT_SIZE);
+    const outIm = new Float64Array(FFT_SIZE);
+
+    const prevPhase = new Float64Array(numBins);
+    const synthPhase = new Float64Array(numBins);
+    const targetMag = new Float64Array(numBins);
+    const domSourceMag = new Float64Array(numBins);
+    const domTargetFreqBin = new Float64Array(numBins);
+
+    const inPowerAcc = new Float64Array(numBins);
+    const outPowerAcc = new Float64Array(numBins);
+    let frameCount = 0;
+
+    const binTarget = new Float64Array(numBins);
+    const binRatio = new Float64Array(numBins);
+    for (let k = 0; k < numBins; k++) {
+      const fe = (k * sr) / FFT_SIZE;
+      const fs = mapFrequency(fe);
+      binTarget[k] = (fs * FFT_SIZE) / sr;
+      binRatio[k] = fe > 0 ? fs / fe : 1;
+    }
+
+    const twoPi = 2 * Math.PI;
+    const phaseFactor = (twoPi * HOP_SIZE) / FFT_SIZE;
+
+    for (let pos = 0; pos + FFT_SIZE <= nSamples; pos += HOP_SIZE) {
+      for (let i = 0; i < FFT_SIZE; i++) {
+        re[i] = input[pos + i] * hannWin[i];
+        im[i] = 0;
+      }
+
+      fft.forward(re, im);
+
+      for (let k = 0; k < numBins; k++) {
+        inPowerAcc[k] += re[k] * re[k] + im[k] * im[k];
+      }
+
+      outRe.fill(0);
+      outIm.fill(0);
+      targetMag.fill(0);
+      domSourceMag.fill(0);
+      domTargetFreqBin.fill(0);
+
+      // Préservation intégrale sous fc
+      for (let k = 0; k < kc && k < numBins; k++) {
+        outRe[k] = re[k];
+        outIm[k] = im[k];
+        prevPhase[k] = Math.atan2(im[k], re[k]);
+      }
+
+      // Remappage spectral au-delà de fc
+      for (let k = kc; k < numBins - 1; k++) {
+        const mag = Math.hypot(re[k], im[k]) * hfGain;
+        const phase = Math.atan2(im[k], re[k]);
+
+        let dPhi = phase - prevPhase[k] - k * phaseFactor;
+        dPhi -= twoPi * Math.round(dPhi / twoPi);
+        prevPhase[k] = phase;
+
+        const instBinIn = k + dPhi / phaseFactor;
+        const instBinOut = instBinIn * binRatio[k];
+
+        const ks = binTarget[k];
+        const k0 = Math.floor(ks);
+        const alpha = ks - k0;
+
+        if (k0 >= 1 && k0 < numBins - 1) {
+          const m0 = mag * (1 - alpha);
+          targetMag[k0] += m0;
+          if (m0 > domSourceMag[k0]) {
+            domSourceMag[k0] = m0;
+            domTargetFreqBin[k0] = instBinOut;
+          }
+        }
+
+        const k1 = k0 + 1;
+        if (k1 >= 1 && k1 < numBins - 1) {
+          const m1 = mag * alpha;
+          targetMag[k1] += m1;
+          if (m1 > domSourceMag[k1]) {
+            domSourceMag[k1] = m1;
+            domTargetFreqBin[k1] = instBinOut;
+          }
+        }
+      }
+
+      // Synthèse de phase cohérente et gestion d'overlap (< fc)
+      for (let b = 1; b < numBins - 1; b++) {
+        if (targetMag[b] > 0) {
+          synthPhase[b] += domTargetFreqBin[b] * phaseFactor;
+          synthPhase[b] -= twoPi * Math.round(synthPhase[b] / twoPi);
+
+          const addRe = targetMag[b] * Math.cos(synthPhase[b]);
+          const addIm = targetMag[b] * Math.sin(synthPhase[b]);
+
+          if (b < kc) {
+            outRe[b] += addRe;
+            outIm[b] += addIm;
+          } else {
+            outRe[b] = addRe;
+            outIm[b] = addIm;
+          }
+        } else if (b >= kc) {
+          synthPhase[b] = 0;
+        }
+      }
+
+      for (let k = 0; k < numBins; k++) {
+        outPowerAcc[k] += outRe[k] * outRe[k] + outIm[k] * outIm[k];
+      }
+      frameCount++;
+
+      outIm[0] = 0;
+      outIm[FFT_SIZE / 2] = 0;
+      for (let k = 1; k < FFT_SIZE / 2; k++) {
+        outRe[FFT_SIZE - k] = outRe[k];
+        outIm[FFT_SIZE - k] = -outIm[k];
+      }
+
+      fft.inverse(outRe, outIm);
+      const colaNorm = 1 / 1.5;
+      for (let i = 0; i < FFT_SIZE; i++) {
+        output[pos + i] += outRe[i] * hannWin[i] * colaNorm;
+      }
+    }
+
+    const outFloat32 = new Float32Array(nSamples);
+    let peak = 0;
+    for (let i = 0; i < nSamples; i++) {
+      const abs = Math.abs(output[i]);
+      if (abs > peak) peak = abs;
+    }
+    const limiter = peak > 0.99 ? 0.99 / peak : 1.0;
+    for (let i = 0; i < nSamples; i++) {
+      outFloat32[i] = output[i] * limiter;
+    }
+    state.outputBuffer = outFloat32;
+
+    if (frameCount > 0) {
+      const inSpec = new Float32Array(numBins);
+      const outSpec = new Float32Array(numBins);
+      const norm = 1 / (frameCount * FFT_SIZE * FFT_SIZE * 0.25);
+      for (let k = 0; k < numBins; k++) {
+        inSpec[k] = 10 * Math.log10(Math.max(1e-12, inPowerAcc[k] * norm));
+        outSpec[k] = 10 * Math.log10(Math.max(1e-12, outPowerAcc[k] * norm));
+      }
+      state.inSpectrum = inSpec;
+      state.outSpectrum = outSpec;
+    }
+
+    drawSpectrum();
+  }
+
+  // =========================================================================
+  // 5. GÉNÉRATEUR DE SIGNAL TEST (/a/ + /ch/ /f/ /s/)
+  // =========================================================================
+  function generateDemoSignal() {
+    const sr = 44100;
+    const duration = 3.2;
+    const length = Math.floor(sr * duration);
+    const buf = new Float32Array(length);
+
+    function addFilteredNoise(startSec, endSec, f0, Q, amp) {
+      const i0 = Math.floor(startSec * sr);
+      const i1 = Math.min(length, Math.floor(endSec * sr));
+      const w0 = (2 * Math.PI * f0) / sr;
+      const alpha = Math.sin(w0) / (2 * Q);
+      const b0 = alpha, b1 = 0, b2 = -alpha;
+      const a0 = 1 + alpha, a1 = -2 * Math.cos(w0), a2 = 1 - alpha;
+
+      let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+      const fade = Math.floor(0.03 * sr);
+      for (let i = i0; i < i1; i++) {
+        const x0 = Math.random() * 2 - 1;
+        const y0 = (b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+        x2 = x1; x1 = x0; y2 = y1; y1 = y0;
+
+        let env = 1;
+        if (i - i0 < fade) env = (i - i0) / fade;
+        else if (i1 - i < fade) env = (i1 - i) / fade;
+        buf[i] += y0 * amp * env;
+      }
+    }
+
+    // Voyelle /a/ (0.1s -> 0.9s)
+    const vStart = Math.floor(0.1 * sr);
+    const vEnd = Math.floor(0.9 * sr);
+    const fadeV = Math.floor(0.04 * sr);
+    for (let i = vStart; i < vEnd; i++) {
+      const t = i / sr;
+      let sig = 0;
+      for (let h = 1; h <= 22; h++) {
+        const fh = 135 * h;
+        const g1 = Math.exp(-Math.pow((fh - 730) / 140, 2));
+        const g2 = 0.7 * Math.exp(-Math.pow((fh - 1090) / 180, 2));
+        const g3 = 0.35 * Math.exp(-Math.pow((fh - 2440) / 260, 2));
+        const weight = (0.15 / h) + g1 + g2 + g3;
+        sig += weight * Math.sin(2 * Math.PI * fh * t);
+      }
+      let env = 1;
+      if (i - vStart < fadeV) env = (i - vStart) / fadeV;
+      else if (vEnd - i < fadeV) env = (vEnd - i) / fadeV;
+      buf[i] += sig * 0.14 * env;
+    }
+
+    // Fricatives /ch/ (2.8 kHz), /f/ (4.5 kHz), /s/ (6.2 kHz)
+    addFilteredNoise(1.05, 1.65, 2800, 3.0, 0.35);
+    addFilteredNoise(1.80, 2.40, 4500, 2.5, 0.32);
+    addFilteredNoise(2.55, 3.15, 6200, 4.0, 0.35);
+
+    state.sampleRate = sr;
+    state.inputBuffer = buf;
+    document.getElementById("fileInfo").textContent =
+      `Signal synthétique chargé (${duration.toFixed(1)} s, ${sr} Hz) — Voyelle /a/ + Fricatives /ch/ (2.8k), /f/ (4.5k), /s/ (6.2k)`;
+
+    enableAudioButtons();
+    updateAll();
+  }
+
+  // =========================================================================
+  // 6. IMPORT & EXPORT WAV
+  // =========================================================================
+  async function handleFileUpload(file) {
+    if (!file) return;
+    stopAudio();
+    if (!state.audioCtx) {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const arrayBuf = await file.arrayBuffer();
+    const audioBuf = await state.audioCtx.decodeAudioData(arrayBuf);
+
+    const len = audioBuf.length;
+    const mono = new Float32Array(len);
+    const nCh = audioBuf.numberOfChannels;
+    for (let ch = 0; ch < nCh; ch++) {
+      const chData = audioBuf.getChannelData(ch);
+      for (let i = 0; i < len; i++) {
+        mono[i] += chData[i] / nCh;
+      }
+    }
+
+    state.sampleRate = audioBuf.sampleRate;
+    state.inputBuffer = mono;
+    document.getElementById("fileInfo").textContent =
+      `Fichier : ${file.name} (${(len / state.sampleRate).toFixed(2)} s, ${state.sampleRate} Hz)`;
+
+    enableAudioButtons();
+    updateAll();
+  }
+
+  function exportWav() {
+    if (!state.outputBuffer) return;
+    const samples = state.outputBuffer;
+    const sr = state.sampleRate;
+    const numSamples = samples.length;
+    const bytesPerSample = 2;
+    const dataSize = numSamples * bytesPerSample;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    function writeString(offset, str) {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    }
+
+    writeString(0, "RIFF");
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sr, true);
+    view.setUint32(28, sr * bytesPerSample, true);
+    view.setUint16(32, bytesPerSample, true);
+    view.setUint16(34, 16, true);
+    writeString(36, "data");
+    view.setUint32(40, dataSize, true);
+
+    let offset = 44;
+    for (let i = 0; i < numSamples; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    }
+
+    const blob = new Blob([buffer], { type: "audio/wav" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const fdActive = state.lockFd ? state.fc : state.fd;
+    a.href = url;
+    a.download = `abaissement_fc${state.fc}_fd${fdActive}_CR${state.cr.toFixed(2)}.wav`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // =========================================================================
+  // 7. LECTURE AUDIO A/B
+  // =========================================================================
+  function stopAudio() {
+    if (state.activeSource) {
+      try { state.activeSource.stop(); } catch (_) {}
+      state.activeSource.disconnect();
+      state.activeSource = null;
+    }
+    state.playingType = null;
+    document.getElementById("btnPlayIn").textContent = "▶ Écouter Entrée";
+    document.getElementById("btnPlayOut").textContent = "▶ Écouter Sortie";
+  }
+
+  function playAudio(type) {
+    const data = type === "in" ? state.inputBuffer : state.outputBuffer;
+    if (!data) return;
+
+    if (!state.audioCtx) {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (state.audioCtx.state === "suspended") {
+      state.audioCtx.resume();
+    }
+
+    let offset = 0;
+    const duration = data.length / state.sampleRate;
+    if (state.playingType && state.activeSource) {
+      const elapsed = state.audioCtx.currentTime - state.playStartTime;
+      offset = (state.playOffset + elapsed) % duration;
+    }
+
+    stopAudio();
+
+    const audioBuf = state.audioCtx.createBuffer(1, data.length, state.sampleRate);
+    audioBuf.copyToChannel(data, 0);
+
+    const src = state.audioCtx.createBufferSource();
+    src.buffer = audioBuf;
+    src.loop = document.getElementById("loopCheck").checked;
+    src.connect(state.audioCtx.destination);
+
+    src.onended = () => {
+      if (state.activeSource === src) stopAudio();
+    };
+
+    src.start(0, offset);
+    state.activeSource = src;
+    state.playingType = type;
+    state.playStartTime = state.audioCtx.currentTime;
+    state.playOffset = offset;
+
+    if (type === "in") {
+      document.getElementById("btnPlayIn").textContent = "🔊 Lecture Entrée...";
+    } else {
+      document.getElementById("btnPlayOut").textContent = "🔊 Lecture Sortie...";
+    }
+  }
+
+  function enableAudioButtons() {
+    document.getElementById("btnPlayIn").disabled = false;
+    document.getElementById("btnPlayOut").disabled = false;
+    document.getElementById("btnStop").disabled = false;
+    document.getElementById("btnExport").disabled = false;
+  }
+
+  // =========================================================================
+  // 8. TRACÉS GRAPHIQUES (COURBE fs(fe) & SPECTRE COMPARATIF)
+  // =========================================================================
+  function freqToX(f, fMin, fMax, left, width, isLog) {
+    if (!isLog) return left + ((f - fMin) / (fMax - fMin)) * width;
+    const logMin = Math.log10(Math.max(125, fMin));
+    const logMax = Math.log10(fMax);
+    const logF = Math.log10(Math.max(125, f));
+    return left + ((logF - logMin) / (logMax - logMin)) * width;
+  }
+
+  function xToFreq(x, fMin, fMax, left, width, isLog) {
+    const ratio = Math.max(0, Math.min(1, (x - left) / width));
+    if (!isLog) return fMin + ratio * (fMax - fMin);
+    const logMin = Math.log10(Math.max(125, fMin));
+    const logMax = Math.log10(fMax);
+    return Math.pow(10, logMin + ratio * (logMax - logMin));
+  }
+
+  function freqToY(f, fMin, fMax, top, height, isLog) {
+    if (!isLog) return top + height - ((f - fMin) / (fMax - fMin)) * height;
+    const logMin = Math.log10(Math.max(125, fMin));
+    const logMax = Math.log10(fMax);
+    const logF = Math.log10(Math.max(125, f));
+    return top + height - ((logF - logMin) / (logMax - logMin)) * height;
+  }
+
+  function drawTransferCurve() {
+    const canvas = document.getElementById("curveCanvas");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    const pad = { left: 58, right: 20, top: 20, bottom: 42 };
+    const plotW = W - pad.left - pad.right;
+    const plotH = H - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const isLog = state.curveLogScale;
+    const fMin = isLog ? 125 : 0;
+    const fMax = 8000;
+    const ticks = isLog
+      ? [125, 250, 500, 1000, 2000, 4000, 8000]
+      : [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
+
+    // Zone d'overlap (lorsque fs(fc) < fc)
+    const fStartAtFc = mapFrequency(state.fc);
+    if (fStartAtFc < state.fc - 1) {
+      const yFc = freqToY(state.fc, fMin, fMax, pad.top, plotH, isLog);
+      const yStart = freqToY(Math.max(fMin, fStartAtFc), fMin, fMax, pad.top, plotH, isLog);
+      ctx.fillStyle = "rgba(225, 29, 72, 0.10)";
+      ctx.fillRect(pad.left, yFc, plotW, yStart - yFc);
+    }
+
+    // Grille et axes
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+    ctx.font = "11px sans-serif";
+    ctx.fillStyle = "#64748b";
+
+    ticks.forEach(t => {
+      const x = freqToX(t, fMin, fMax, pad.left, plotW, isLog);
+      const y = freqToY(t, fMin, fMax, pad.top, plotH, isLog);
+
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + plotH);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(pad.left + plotW, y);
+      ctx.stroke();
+
+      const label = t >= 1000 ? `${t / 1000}k` : `${t}`;
+      ctx.textAlign = "center";
+      ctx.fillText(label, x, pad.top + plotH + 16);
+      ctx.textAlign = "right";
+      ctx.fillText(label, pad.left - 8, y + 4);
+    });
+
+    // Titres d'axes
+    ctx.fillStyle = "#1e293b";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Fréquence d'entrée fe (Hz)", pad.left + plotW / 2, H - 8);
+
+    ctx.save();
+    ctx.translate(15, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Fréquence de sortie fs (Hz)", 0, 0);
+    ctx.restore();
+
+    // Diagonale identité fs = fe
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top + plotH);
+    ctx.lineTo(pad.left + plotW, pad.top);
+    ctx.stroke();
+    ctx.restore();
+
+    // Ligne verticale fc
+    if (state.fc >= fMin && state.fc <= fMax) {
+      const xFc = freqToX(state.fc, fMin, fMax, pad.left, plotW, isLog);
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xFc, pad.top);
+      ctx.lineTo(xFc, pad.top + plotH);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Tracé de la courbe fs(fe) avec échantillonnage adapté à l'échelle
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    const steps = 400;
+    let jumped = false;
+
+    for (let i = 0; i <= steps; i++) {
+      const u = i / steps;
+      const fe = isLog
+        ? fMin * Math.pow(fMax / fMin, u)
+        : fMin + u * (fMax - fMin);
+
+      // Insertion exacte du point de cassure/saut à fc
+      if (!jumped && fe >= state.fc && state.fc >= fMin && state.fc <= fMax) {
+        const xFc = freqToX(state.fc, fMin, fMax, pad.left, plotW, isLog);
+        const yBefore = freqToY(state.fc, fMin, fMax, pad.top, plotH, isLog);
+        const yAfter = freqToY(Math.max(fMin, mapFrequency(state.fc)), fMin, fMax, pad.top, plotH, isLog);
+        if (i === 0) ctx.moveTo(xFc, yBefore);
+        else ctx.lineTo(xFc, yBefore);
+        ctx.lineTo(xFc, yAfter);
+        jumped = true;
+      }
+
+      const fs = Math.max(fMin, Math.min(fMax, mapFrequency(fe)));
+      const x = freqToX(fe, fMin, fMax, pad.left, plotW, isLog);
+      const y = freqToY(fs, fMin, fMax, pad.top, plotH, isLog);
+
+      if (i === 0 && !jumped) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad.left, pad.top, plotW, plotH);
+  }
+
+  function drawSpectrum() {
+    const canvas = document.getElementById("specCanvas");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    const pad = { left: 58, right: 20, top: 20, bottom: 42 };
+    const plotW = W - pad.left - pad.right;
+    const plotH = H - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const isLog = state.specLogScale;
+    const fMin = isLog ? 125 : 0;
+    const fMax = 8000;
+    const dbMin = -90;
+    const dbMax = 0;
+    const ticks = isLog
+      ? [125, 250, 500, 1000, 2000, 4000, 8000]
+      : [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
+
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+    ctx.font = "11px sans-serif";
+    ctx.fillStyle = "#64748b";
+
+    ticks.forEach(t => {
+      const x = freqToX(t, fMin, fMax, pad.left, plotW, isLog);
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + plotH);
+      ctx.stroke();
+
+      const label = t >= 1000 ? `${t / 1000}k` : `${t}`;
+      ctx.textAlign = "center";
+      ctx.fillText(label, x, pad.top + plotH + 16);
+    });
+
+    for (let db = dbMin; db <= dbMax; db += 15) {
+      const y = pad.top + plotH - ((db - dbMin) / (dbMax - dbMin)) * plotH;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(pad.left + plotW, y);
+      ctx.stroke();
+
+      ctx.textAlign = "right";
+      ctx.fillText(`${db}`, pad.left - 8, y + 4);
+    }
+
+    ctx.fillStyle = "#1e293b";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Fréquence (Hz)", pad.left + plotW / 2, H - 8);
+
+    ctx.save();
+    ctx.translate(15, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Niveau relatif (dB FS)", 0, 0);
+    ctx.restore();
+
+    if (state.fc >= fMin && state.fc <= fMax) {
+      const xFc = freqToX(state.fc, fMin, fMax, pad.left, plotW, isLog);
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xFc, pad.top);
+      ctx.lineTo(xFc, pad.top + plotH);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function plotLine(specData, color, fillAlpha) {
+      if (!specData) return;
+      const numBins = specData.length;
+      const sr = state.sampleRate;
+
+      ctx.save();
+      ctx.beginPath();
+      let started = false;
+      let firstX = pad.left;
+      let lastX = pad.left;
+
+      for (let k = 1; k < numBins; k++) {
+        const f = (k * sr) / FFT_SIZE;
+        if (f < fMin || f > fMax) continue;
+
+        const x = freqToX(f, fMin, fMax, pad.left, plotW, isLog);
+        const clampedDb = Math.max(dbMin, Math.min(dbMax, specData[k]));
+        const y = pad.top + plotH - ((clampedDb - dbMin) / (dbMax - dbMin)) * plotH;
+
+        if (!started) {
+          ctx.moveTo(x, y);
+          firstX = x;
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+        lastX = x;
+      }
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      if (fillAlpha > 0 && started) {
+        ctx.lineTo(lastX, pad.top + plotH);
+        ctx.lineTo(firstX, pad.top + plotH);
+        ctx.closePath();
+        ctx.fillStyle = color.replace("rgb", "rgba").replace(")", `, ${fillAlpha})`);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    plotLine(state.inSpectrum, "rgb(37, 99, 235)", 0.12);
+    plotLine(state.outSpectrum, "rgb(225, 29, 72)", 0.10);
+
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad.left, pad.top, plotW, plotH);
+  }
+
+  // =========================================================================
+  // 9. MISE À JOUR UI, ÉQUATION & INTERACTIONS SOURIS
+  // =========================================================================
+  function updateFormulaAndBadge() {
+    const effectiveFd = state.lockFd ? state.fc : state.fd;
+    const fStartAtFc = Math.max(0, state.multD * effectiveFd - state.deltaF);
+    const isTrans = fStartAtFc < state.fc - 1;
+    const isMult = state.multD < 0.999;
+    const isNonLin = state.cr > 1.001;
+
+    let modeLabel = "Identité (aucun abaissement)";
+    if (!isTrans && !isMult && isNonLin) modeLabel = "Compression fréquentielle non-linéaire";
+    else if (!isTrans && isMult && !isNonLin) modeLabel = "Compression fréquentielle linéaire";
+    else if (!isTrans && isMult && isNonLin) modeLabel = "Compression fréquentielle mixte";
+    else if (isTrans && !isMult && !isNonLin) modeLabel = "Transposition linéaire (soustractive)";
+    else if (isTrans && isMult && !isNonLin) modeLabel = "Transposition compressée (multiplicative)";
+    else if (isTrans && isNonLin) modeLabel = "Transposition compressée non-linéaire";
+
+    document.getElementById("modeBadge").textContent = `Mode : ${modeLabel}`;
+
+    const formulaEl = document.getElementById("formulaDisplay");
+    formulaEl.innerHTML =
+      `<strong>Pour f<sub>e</sub> &lt; ${state.fc} Hz :</strong> f<sub>s</sub> = f<sub>e</sub><br>` +
+      `<strong>Pour f<sub>e</sub> &ge; ${state.fc} Hz :</strong> ` +
+      `f<sub>s</sub> = (${state.multD.toFixed(2)} &times; ${effectiveFd}) &times; (f<sub>e</sub> / ${state.fc})<sup>1 / ${state.cr.toFixed(2)}</sup> &minus; ${state.deltaF}`;
+  }
+
+  let processTimer = null;
+  function updateAll() {
+    if (state.lockFd) {
+      state.fd = state.fc;
+      document.getElementById("fdSlider").value = state.fc;
+      document.getElementById("fdVal").textContent = `${state.fc} Hz`;
+    }
+
+    updateFormulaAndBadge();
+    drawTransferCurve();
+
+    clearTimeout(processTimer);
+    processTimer = setTimeout(() => {
+      const wasPlaying = state.playingType;
+      processSignal();
+      if (wasPlaying === "out") {
+        playAudio("out");
+      }
+    }, 35);
+  }
+
+  // Écouteurs sliders
+  document.getElementById("fcSlider").addEventListener("input", e => {
+    state.fc = Number(e.target.value);
+    document.getElementById("fcVal").textContent = `${state.fc} Hz`;
+    updateAll();
+  });
+
+  document.getElementById("lockFd").addEventListener("change", e => {
+    state.lockFd = e.target.checked;
+    document.getElementById("fdSlider").disabled = state.lockFd;
+    updateAll();
+  });
+
+  document.getElementById("fdSlider").addEventListener("input", e => {
+    state.fd = Number(e.target.value);
+    document.getElementById("fdVal").textContent = `${state.fd} Hz`;
+    updateAll();
+  });
+
+  document.getElementById("deltaSlider").addEventListener("input", e => {
+    state.deltaF = Number(e.target.value);
+    document.getElementById("deltaVal").textContent = `${state.deltaF} Hz`;
+    updateAll();
+  });
+
+  document.getElementById("multSlider").addEventListener("input", e => {
+    state.multD = Number(e.target.value);
+    document.getElementById("multVal").textContent = state.multD.toFixed(2);
+    updateAll();
+  });
+
+  document.getElementById("crSlider").addEventListener("input", e => {
+    state.cr = Number(e.target.value);
+    document.getElementById("crVal").textContent = state.cr.toFixed(2);
+    updateAll();
+  });
+
+  document.getElementById("gainSlider").addEventListener("input", e => {
+    state.gainDb = Number(e.target.value);
+    const sign = state.gainDb >= 0 ? "+" : "";
+    document.getElementById("gainVal").textContent = `${sign}${state.gainDb} dB`;
+    updateAll();
+  });
+
+  // Préréglages pédagogiques
+  const presets = {
+    comp_nl:    { fc: 2000, lockFd: true,  fd: 2000, deltaF: 0,    multD: 1.00, cr: 2.00, gainDb: 3 },
+    trans_lin:  { fc: 3000, lockFd: true,  fd: 3000, deltaF: 1500, multD: 1.00, cr: 1.00, gainDb: 0 },
+    trans_mult: { fc: 4000, lockFd: true,  fd: 4000, deltaF: 0,    multD: 0.50, cr: 1.00, gainDb: 2 },
+    trans_nl:   { fc: 2000, lockFd: false, fd: 1000, deltaF: 0,    multD: 1.00, cr: 2.00, gainDb: 3 }
+  };
+
+  document.querySelectorAll(".preset-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const p = presets[btn.dataset.preset];
+      if (!p) return;
+      state.fc = p.fc;
+      state.lockFd = p.lockFd;
+      state.fd = p.fd;
+      state.deltaF = p.deltaF;
+      state.multD = p.multD;
+      state.cr = p.cr;
+      state.gainDb = p.gainDb;
+
+      document.getElementById("fcSlider").value = p.fc;
+      document.getElementById("fcVal").textContent = `${p.fc} Hz`;
+      document.getElementById("lockFd").checked = p.lockFd;
+      document.getElementById("fdSlider").disabled = p.lockFd;
+      document.getElementById("fdSlider").value = p.fd;
+      document.getElementById("fdVal").textContent = `${p.fd} Hz`;
+      document.getElementById("deltaSlider").value = p.deltaF;
+      document.getElementById("deltaVal").textContent = `${p.deltaF} Hz`;
+      document.getElementById("multSlider").value = p.multD;
+      document.getElementById("multVal").textContent = p.multD.toFixed(2);
+      document.getElementById("crSlider").value = p.cr;
+      document.getElementById("crVal").textContent = p.cr.toFixed(2);
+      document.getElementById("gainSlider").value = p.gainDb;
+      document.getElementById("gainVal").textContent = `${p.gainDb >= 0 ? "+" : ""}${p.gainDb} dB`;
+
+      updateAll();
+    });
+  });
+
+  // Boutons fichiers, lecture, échelles
+  document.getElementById("wavInput").addEventListener("change", e => handleFileUpload(e.target.files[0]));
+  document.getElementById("btnSynth").addEventListener("click", generateDemoSignal);
+  document.getElementById("btnPlayIn").addEventListener("click", () => playAudio("in"));
+  document.getElementById("btnPlayOut").addEventListener("click", () => playAudio("out"));
+  document.getElementById("btnStop").addEventListener("click", stopAudio);
+  document.getElementById("btnExport").addEventListener("click", exportWav);
+
+  document.getElementById("toggleCurveScale").addEventListener("click", e => {
+    state.curveLogScale = !state.curveLogScale;
+    e.target.textContent = `Échelle : ${state.curveLogScale ? "Log" : "Linéaire"}`;
+    drawTransferCurve();
+  });
+
+  document.getElementById("toggleSpecScale").addEventListener("click", e => {
+    state.specLogScale = !state.specLogScale;
+    e.target.textContent = `Échelle : ${state.specLogScale ? "Log" : "Linéaire"}`;
+    drawSpectrum();
+  });
+
+  // Infobulles interactives
+  document.getElementById("curveCanvas").addEventListener("mousemove", e => {
+    const rect = e.target.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * e.target.width;
+    const fMin = state.curveLogScale ? 125 : 0;
+    const fe = xToFreq(x, fMin, 8000, 58, e.target.width - 78, state.curveLogScale);
+    const fs = mapFrequency(fe);
+    document.getElementById("curveTooltip").innerHTML =
+      `Entrée f<sub>e</sub> = <strong>${Math.round(fe)} Hz</strong> &rarr; Sortie f<sub>s</sub> = <strong>${Math.round(fs)} Hz</strong> (écart : ${Math.round(fs - fe)} Hz)`;
+  });
+
+  document.getElementById("specCanvas").addEventListener("mousemove", e => {
+    const rect = e.target.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * e.target.width;
+    const fMin = state.specLogScale ? 125 : 0;
+    const f = xToFreq(x, fMin, 8000, 58, e.target.width - 78, state.specLogScale);
+    const bin = Math.min(FFT_SIZE / 2, Math.max(0, Math.round((f * FFT_SIZE) / state.sampleRate)));
+    const inDb = state.inSpectrum ? state.inSpectrum[bin].toFixed(1) : "--";
+    const outDb = state.outSpectrum ? state.outSpectrum[bin].toFixed(1) : "--";
+    document.getElementById("specTooltip").innerHTML =
+      `Fréquence : <strong>${Math.round(f)} Hz</strong> | Entrée : <strong>${inDb} dB</strong> | Sortie : <strong>${outDb} dB</strong>`;
+  });
+
+  // Initialisation
+  updateFormulaAndBadge();
+  drawTransferCurve();
+  drawSpectrum();
+})();
+</script>
+</body>
+</html>
